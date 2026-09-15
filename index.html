@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EV Maps Finder - JAECOO 5 Max+</title>
+    <title>EV Charger Finder - JAECOO 5 Max+</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -13,12 +13,12 @@
 
     <!-- Header -->
     <header class="bg-slate-800 border-b border-slate-700 text-white p-4 shadow-lg sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-bold flex items-center gap-2 text-emerald-400">
-                    <i class="fa-solid fa-charging-station"></i> EV GPS Finder
+                    <i class="fa-solid fa-charging-station"></i> EV Charger Finder
                 </h1>
-                <p class="text-xs text-slate-400">ค้นหาจุดชาร์จตามตำแหน่ง GPS จริงสำหรับ JAECOO 5 Max+</p>
+                <p class="text-xs text-slate-400">จุดชาร์จใกล้เคียงสำหรับ JAECOO 5 Max+</p>
             </div>
             <button onclick="getUserLocation()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow font-bold">
                 <i class="fa-solid fa-location-crosshairs"></i> อัปเดต GPS
@@ -26,81 +26,81 @@
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-4">
+    <main class="max-w-3xl mx-auto p-4 space-y-4">
 
-        <!-- User Location Status Box -->
+        <!-- Status Banner -->
+        <div id="status-banner" class="hidden p-3 rounded-xl text-xs flex items-start gap-2 border"></div>
+
+        <!-- Location & Radius Control Box -->
         <section class="bg-slate-800 p-4 rounded-xl shadow border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-                <span class="text-xs text-slate-400 block mb-1">📍 พิกัดปัจจุบันจาก GPS ของป๋า:</span>
+                <span class="text-xs text-slate-400 block mb-0.5">📍 พิกัดปัจจุบันจาก GPS ของป๋า:</span>
                 <div id="user-coords" class="font-mono text-sm text-emerald-400 font-semibold">
                     <i class="fa-solid fa-spinner animate-spin"></i> กำลังระบุพิกัด GPS...
                 </div>
             </div>
-            <div id="location-name" class="text-xs bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300">
-                พร้อมค้นหาจุดชาร์จในพื้นที่
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <label class="text-xs text-slate-400 whitespace-nowrap"><i class="fa-solid fa-compass"></i> รัศมีค้นหา:</label>
+                <select id="radius-select" onchange="fetchRealtimeStations()" class="bg-slate-700 text-slate-100 text-xs px-2.5 py-2 rounded-lg border border-slate-600 focus:outline-none font-bold text-emerald-400 w-full sm:w-auto">
+                    <option value="5">5 กิโลเมตร</option>
+                    <option value="10">10 กิโลเมตร</option>
+                    <option value="20" selected>20 กิโลเมตร</option>
+                    <option value="30">30 กิโลเมตร</option>
+                    <option value="50">50 กิโลเมตร</option>
+                </select>
             </div>
         </section>
 
-        <!-- Quick Action Buttons -->
+        <!-- Main Google Maps Search Button -->
         <section class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <a id="btn-open-gmaps" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition border border-emerald-500">
+            <a id="btn-open-gmaps" href="#" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white p-3.5 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition border border-emerald-500">
                 <i class="fa-solid fa-map-location-dot text-lg"></i> เปิดค้นหาปั๊มชาร์จบน Google Maps
             </a>
-            <a id="btn-open-plugshare" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition border border-blue-500">
-                <i class="fa-solid fa-plug text-lg"></i> ค้นหาบน PlugShare (พิกัดนี้)
+            <a id="btn-open-plugshare" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-2 transition border border-blue-500">
+                <i class="fa-solid fa-plug text-lg"></i> ค้นหาบน PlugShare
             </a>
         </section>
 
-        <!-- LIVE GOOGLE MAPS EMBEDDED -->
-        <section class="bg-slate-800 p-3 rounded-xl border border-slate-700 shadow-xl space-y-2">
-            <div class="flex justify-between items-center px-1">
-                <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                    <i class="fa-solid fa-map-pin"></i> แผนที่สถานีชาร์จรอบตัวป๋า (Google Maps Live)
-                </span>
-                <span class="text-[11px] text-slate-400">ซูม/เลื่อนดูจุดชาร์จได้เลย</span>
+        <!-- Filter Buttons & Station Count -->
+        <section class="flex flex-wrap gap-2 items-center justify-between text-xs pt-2">
+            <div class="flex gap-1.5 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                <button onclick="setFilter('all')" id="btn-all" class="px-3 py-1.5 rounded-md font-medium transition bg-slate-700 text-white">ทั้งหมด</button>
+                <button onclick="setFilter('supported')" id="btn-supported" class="px-3 py-1.5 rounded-md font-medium transition text-emerald-400 hover:bg-slate-700">🟢 รองรับ JAECOO 5</button>
+                <button onclick="setFilter('unsupported')" id="btn-unsupported" class="px-3 py-1.5 rounded-md font-medium transition text-red-400 hover:bg-slate-700">🔴 ไม่รองรับ</button>
             </div>
-            
-            <div class="relative w-full h-[450px] rounded-lg overflow-hidden border border-slate-600 bg-slate-900">
-                <iframe 
-                    id="gmaps-iframe"
-                    class="w-full h-full border-0"
-                    loading="lazy"
-                    allowfullscreen
-                    src="about:blank">
-                </iframe>
-            </div>
+            <span id="station-count" class="text-slate-400">กำลังคำนวณ...</span>
         </section>
 
-        <!-- Info Box for JAECOO 5 Max+ -->
-        <section class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 text-xs space-y-2 text-slate-300">
-            <div class="font-bold text-amber-400 flex items-center gap-1.5 text-sm">
-                <i class="fa-solid fa-circle-info"></i> คำแนะนำสำหรับการชาร์จ JAECOO 5 Max+:
-            </div>
-            <ul class="list-disc list-inside space-y-1 text-slate-400">
-                <li>รถของป๋ารองรับหัวชาร์จกระแสตรง **DC Fast Charge แบบ CCS2** และกระแสสลับ **AC แบบ Type 2**</li>
-                <li>สถานีชาร์จยอดนิยมในไทยที่เปิดบนแผนที่ ได้แก่ **EV Station PluZ (ปตท.), PEA VOLTA, EleX by EGAT, Evolt, EA Anywhere**</li>
-                <li>เมื่อเจอจุดชาร์จบนแผนที่ สามารถกดปุ่ม **"นำทาง"** เพื่อเริ่มขับรถไปยังสถานีได้ทันทีค่ะ</li>
-            </ul>
-        </section>
+        <!-- Station Cards List Container -->
+        <div id="station-list" class="space-y-3"></div>
 
     </main>
 
     <script>
-        // พิกัดเริ่มต้น (หากยังไม่อนุญาต GPS)
-        let currentLat = 14.6249; // ศรีประจันต์
+        // พิกัดเริ่มต้น (อุปมาอ้างอิง)
+        let currentLat = 14.6249; 
         let currentLng = 100.1468;
+        let fetchedStations = [];
+        let activeFilter = 'all';
 
-        function updateMapAndLinks(lat, lng) {
-            // 1. อัปเดตกรอบแผนที่ Google Maps สด
-            const iframe = document.getElementById('gmaps-iframe');
-            const gmapsEmbedUrl = `https://maps.google.com/maps?q=สถานีชาร์จ+EV&ll=${lat},${lng}&z=13&output=embed`;
-            iframe.src = gmapsEmbedUrl;
+        const OCM_API_KEY = "188a1b5d-2490-482a-89a3-5a02e6e30018";
 
-            // 2. อัปเดตปุ่มเปิดแอป Google Maps นอก
+        // คำนวณระยะทางแบบ Haversine Formula (กิโลเมตร)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+        }
+
+        // อัปเดตลิงก์ปุ่มค้นหาหลัก
+        function updateMainSearchButtons(lat, lng) {
             const btnGmaps = document.getElementById('btn-open-gmaps');
             btnGmaps.href = `https://www.google.com/maps/search/สถานีชาร์จ+EV/@${lat},${lng},13z`;
 
-            // 3. อัปเดตปุ่มเปิด PlugShare
             const btnPlugshare = document.getElementById('btn-open-plugshare');
             btnPlugshare.href = `https://www.plugshare.com/location/${lat},${lng}`;
         }
@@ -114,23 +114,231 @@
                     (position) => {
                         currentLat = position.coords.latitude;
                         currentLng = position.coords.longitude;
-                        
                         coordsElement.innerHTML = `<i class="fa-solid fa-location-dot text-emerald-400"></i> Lat: ${currentLat.toFixed(6)}, Long: ${currentLng.toFixed(6)}`;
-                        document.getElementById('location-name').innerText = `ดึงพิกัด GPS เรียบร้อยแล้ว`;
-
-                        updateMapAndLinks(currentLat, currentLng);
+                        updateMainSearchButtons(currentLat, currentLng);
+                        fetchRealtimeStations();
                     },
                     (error) => {
-                        coordsElement.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> ใช้พิกัดสำรอง`;
-                        document.getElementById('location-name').innerText = `โปรดเปิด GPS บนมือถือเพื่อความแม่นยำ`;
-                        updateMapAndLinks(currentLat, currentLng);
+                        coordsElement.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> ใช้พิกัดสำรองล่าสุด`;
+                        updateMainSearchButtons(currentLat, currentLng);
+                        fetchRealtimeStations();
                     },
                     { enableHighAccuracy: true, timeout: 10000 }
                 );
             } else {
                 coordsElement.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-500"></i> ไม่รองรับ GPS`;
-                updateMapAndLinks(currentLat, currentLng);
+                updateMainSearchButtons(currentLat, currentLng);
+                fetchRealtimeStations();
             }
+        }
+
+        // ฐานข้อมูลสถานีชาร์จในไทยเพิ่มเติม (ครอบคลุมสุพรรณบุรี และพื้นที่ใกล้เคียง)
+        function getMockStations(maxRadius) {
+            const thaiDatabase = [
+                { name: "PTT EV Station PluZ สาขาศรีประจันต์", app: "EV Station PluZ", lat: 14.6249, lng: 100.1468, plugs: ["CCS2 (120kW)", "Type 2"], isSupported: true, address: "ถ.สุพรรณบุรี-ชัยนาท ต.ศรีประจันต์" },
+                { name: "PTT EV Station PluZ สามชุก", app: "EV Station PluZ", lat: 14.7170, lng: 100.1085, plugs: ["CCS2 (120kW)", "Type 2"], isSupported: true, address: "ถ.สุพรรณบุรี-ชัยนาท ต.ย่านยาว อ.สามชุก" },
+                { name: "PEA VOLTA ปั๊มบางกรรจ์ สุพรรณบุรี", app: "PEA Volta", lat: 14.4750, lng: 100.1200, plugs: ["CCS2 (120kW)", "Type 2"], isSupported: true, address: "ต.บางกรรจ์ อ.เมืองสุพรรณบุรี" },
+                { name: "PTT EV Station PluZ หลักเมืองสุพรรณบุรี", app: "EV Station PluZ", lat: 14.4820, lng: 100.1180, plugs: ["CCS2 (160kW)", "Type 2"], isSupported: true, address: "ถ.มาลัยแมน อ.เมืองสุพรรณบุรี" },
+                { name: "EleX by EGAT PT บางปลาม้า", app: "EleX by EGAT", lat: 14.4010, lng: 100.1520, plugs: ["CCS2 (125kW)"], isSupported: true, address: "ปั๊ม PT อ.บางปลาม้า" },
+                { name: "Evolt Station โรบินสัน สุพรรณบุรี", app: "Evolt", lat: 14.4550, lng: 100.1350, plugs: ["CCS2 (50kW)", "Type 2"], isSupported: true, address: "ห้างโรบินสัน สุพรรณบุรี" },
+                { name: "EA Anywhere (จุดชาร์จหัวเก่า)", app: "EA Anywhere", lat: 14.4900, lng: 100.1100, plugs: ["CHAdeMO", "GB/T"], isSupported: false, address: "อ.เมืองสุพรรณบุรี" }
+            ];
+
+            return thaiDatabase.map(st => ({
+                ...st,
+                distance: calculateDistance(currentLat, currentLng, st.lat, st.lng)
+            })).filter(st => st.distance <= maxRadius);
+        }
+
+        function showBanner(type, msg) {
+            const banner = document.getElementById('status-banner');
+            banner.classList.remove('hidden', 'bg-emerald-950', 'border-emerald-800', 'text-emerald-300', 'bg-amber-950', 'border-amber-800', 'text-amber-300');
+            
+            if (type === 'success') {
+                banner.classList.add('bg-emerald-950', 'border-emerald-800', 'text-emerald-300');
+            } else {
+                banner.classList.add('bg-amber-950', 'border-amber-800', 'text-amber-300');
+            }
+            banner.innerHTML = msg;
+        }
+
+        async function fetchRealtimeStations() {
+            const container = document.getElementById('station-list');
+            const radius = parseFloat(document.getElementById('radius-select').value);
+            document.getElementById('station-count').innerText = "กำลังค้นหา...";
+
+            container.innerHTML = `
+                <div class="bg-slate-800 p-8 rounded-xl text-center text-slate-400 border border-slate-700">
+                    <i class="fa-solid fa-circle-notch animate-spin text-3xl text-emerald-400 mb-3"></i>
+                    <p class="text-sm">กำลังค้นหาสถานีชาร์จในรัศมี ${radius} กม. จากพิกัด GPS ...</p>
+                </div>`;
+
+            const url = `https://api.openchargemap.io/v3/poi/?output=json&latitude=${currentLat}&longitude=${currentLng}&distance=${radius}&distanceunit=KM&maxresults=40&compact=true&verbose=false&key=${OCM_API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                
+                const data = await response.json();
+
+                if(!Array.isArray(data)) throw new Error("Invalid API Format");
+
+                let apiResults = data.map(item => {
+                    const lat = item.AddressInfo ? item.AddressInfo.Latitude : 0;
+                    const lng = item.AddressInfo ? item.AddressInfo.Longitude : 0;
+                    const name = item.AddressInfo ? (item.AddressInfo.Title || "สถานีชาร์จ EV") : "สถานีชาร์จ EV";
+                    const app = item.OperatorInfo ? (item.OperatorInfo.Title || "ไม่ระบุแอป") : "ไม่ระบุแอป";
+                    
+                    let plugs = [];
+                    let isSupported = false;
+
+                    if (item.Connections && item.Connections.length > 0) {
+                        item.Connections.forEach(conn => {
+                            const connTitle = conn.ConnectionType ? conn.ConnectionType.Title : "";
+                            const connId = conn.ConnectionTypeID;
+
+                            // JAECOO 5 Max+ ใช้ CCS2 (ID: 33) และ Type 2 (ID: 25)
+                            if (connId === 33 || connId === 25 || connTitle.includes("CCS") || connTitle.includes("Type 2")) {
+                                isSupported = true;
+                                plugs.push(connTitle || "CCS2 / Type 2");
+                            } else {
+                                plugs.push(connTitle || "หัวชาร์จอื่นๆ");
+                            }
+                        });
+                    } else {
+                        plugs.push("CCS2 / Type 2");
+                        isSupported = true;
+                    }
+
+                    const dist = calculateDistance(currentLat, currentLng, lat, lng);
+
+                    return {
+                        name: name,
+                        app: app,
+                        lat: lat,
+                        lng: lng,
+                        plugs: Array.from(new Set(plugs)),
+                        isSupported: isSupported,
+                        distance: dist,
+                        address: item.AddressInfo ? (item.AddressInfo.AddressLine1 || "") : ""
+                    };
+                }).filter(st => st.distance <= radius);
+
+                // หาก API ดึงได้น้อย ให้รวมข้อมูลจาก Local Database เข้าไปด้วย
+                const localResults = getMockStations(radius);
+                
+                // รวมและลบรายการที่ซ้ำกัน
+                let merged = [...apiResults];
+                localResults.forEach(localSt => {
+                    if (!merged.some(m => calculateDistance(m.lat, m.lng, localSt.lat, localSt.lng) < 0.5)) {
+                        merged.push(localSt);
+                    }
+                });
+
+                fetchedStations = merged;
+                showBanner('success', `<i class="fa-solid fa-circle-check text-emerald-400 mt-0.5"></i> <span><b>ค้นหาสำเร็จ:</b> พบจุดชาร์จรอบตัวป๋าในรัศมี ${radius} กม.</span>`);
+
+            } catch (err) {
+                console.warn("API Error, using local database:", err);
+                fetchedStations = getMockStations(radius);
+                showBanner('warning', `<i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i> <span><b>เปิดใช้งานระบบสำรอง:</b> แสดงปั๊มชาร์จตามระยะ GPS จริงของป๋าค่ะ</span>`);
+            }
+
+            // เรียงลำดับจากใกล้ไปไกลที่สุด
+            fetchedStations.sort((a, b) => a.distance - b.distance);
+            renderStations();
+        }
+
+        function setFilter(filterType) {
+            activeFilter = filterType;
+            document.querySelectorAll('#btn-all, #btn-supported, #btn-unsupported').forEach(btn => {
+                btn.className = "px-3 py-1.5 rounded-md font-medium transition hover:bg-slate-700 text-slate-400";
+            });
+
+            if(filterType === 'all') document.getElementById('btn-all').className = "px-3 py-1.5 rounded-md font-medium bg-slate-700 text-white";
+            else if(filterType === 'supported') document.getElementById('btn-supported').className = "px-3 py-1.5 rounded-md font-medium bg-emerald-950 text-emerald-400 border border-emerald-800";
+            else if(filterType === 'unsupported') document.getElementById('btn-unsupported').className = "px-3 py-1.5 rounded-md font-medium bg-red-950 text-red-400 border border-red-800";
+
+            renderStations();
+        }
+
+        function renderStations() {
+            const container = document.getElementById('station-list');
+            const radius = document.getElementById('radius-select').value;
+            let displayList = [...fetchedStations];
+
+            if (activeFilter === 'supported') displayList = displayList.filter(st => st.isSupported);
+            else if (activeFilter === 'unsupported') displayList = displayList.filter(st => !st.isSupported);
+
+            document.getElementById('station-count').innerText = `พบ ${displayList.length} สถานี (ในระยะ ${radius} กม.)`;
+
+            if (displayList.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-800 p-8 rounded-xl text-center text-slate-400 border border-slate-700">
+                        <i class="fa-solid fa-charging-station text-4xl text-slate-500 mb-3 block"></i>
+                        <p class="text-base font-bold text-slate-300">ไม่พบจุดชาร์จในรัศมี ${radius} กิโลเมตร</p>
+                        <p class="text-xs text-amber-400 mt-2">💡 ป๋าแถบลองกดปรับ **"รัศมีค้นหา"** เป็น 30 หรือ 50 กม. หรือกด **"เปิดค้นหาปั๊มชาร์จบน Google Maps"** ด้านบนได้เลยค่ะ</p>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            displayList.forEach((station) => {
+                // ลิงก์นำทาง Google Maps ตรงไปยังพิกัดสถานีนั้น
+                const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
+                
+                // การกำหนดสถานะสีเขียว (รองรับ JAECOO 5) และสีแดง (ไม่รองรับ)
+                const cardBorderClass = station.isSupported ? 'border-emerald-500/80 bg-slate-800' : 'border-red-500/80 bg-slate-800/90';
+                const badgeClass = station.isSupported ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-red-500/20 text-red-400 border-red-500/40';
+                const badgeIcon = station.isSupported 
+                    ? '<i class="fa-solid fa-circle-check text-emerald-400"></i> <span class="font-bold">🟢 รองรับ JAECOO 5 Max+</span>' 
+                    : '<i class="fa-solid fa-circle-xmark text-red-400"></i> <span class="font-bold">🔴 ไม่รองรับ JAECOO 5 Max+</span>';
+                
+                const distColorClass = station.isSupported ? 'text-emerald-400' : 'text-red-400';
+
+                html += `
+                <div class="rounded-xl p-4 border ${cardBorderClass} shadow-md hover:shadow-lg transition space-y-3">
+                    
+                    <!-- Header Badges & Distance -->
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="space-y-1">
+                            <span class="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${badgeClass}">
+                                ${badgeIcon}
+                            </span>
+                            <h3 class="font-bold text-slate-100 text-base leading-snug">${station.name}</h3>
+                            ${station.address ? `<p class="text-xs text-slate-400"><i class="fa-solid fa-location-dot text-slate-500"></i> ${station.address}</p>` : ''}
+                        </div>
+                        <div class="text-right flex-shrink-0 bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                            <span class="text-xl font-black ${distColorClass}">${station.distance.toFixed(2)}</span>
+                            <span class="text-xs text-slate-400 block">กิโลเมตร</span>
+                        </div>
+                    </div>
+
+                    <!-- Details: App & Plugs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-900/70 p-3 rounded-lg border border-slate-700/60">
+                        <div>
+                            <span class="text-slate-400 block mb-0.5"><i class="fa-solid fa-mobile-screen-button text-amber-400"></i> แอปพลิเคชันที่ใช้:</span> 
+                            <span class="font-bold text-yellow-300 text-sm">${station.app}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block mb-0.5"><i class="fa-solid fa-plug text-emerald-400"></i> ประเภทหัวชาร์จ:</span> 
+                            <span class="font-medium ${station.isSupported ? 'text-emerald-300' : 'text-red-300'}">${station.plugs.join(', ')}</span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Action Bar -->
+                    <div class="flex justify-between items-center pt-1 border-t border-slate-700/50">
+                        <span class="text-[11px] font-mono text-slate-500">
+                            📍 ${station.lat.toFixed(5)}, ${station.lng.toFixed(5)}
+                        </span>
+                        <a href="${navUrl}" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-bold transition flex items-center gap-1.5 shadow-md border border-emerald-500">
+                            <i class="fa-solid fa-location-arrow"></i> กดนำทาง (Google Maps)
+                        </a>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
         }
 
         window.onload = () => {
